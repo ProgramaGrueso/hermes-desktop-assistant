@@ -12,7 +12,17 @@ const LM_STUDIO_HOST = process.env.LM_STUDIO_HOST || '1234';
 const LM_STUDIO_URL = process.env.LM_STUDIO_URL || `http://localhost:${LM_STUDIO_HOST}/v1`;
 const DEFAULT_MODEL = 'qwen3.5-9b-the-defiant-fable-uncensored-heretic-neo-imatrix-max-mtp';
 
-app.use(cors());
+// Seguridad: el servidor solo atiende a localhost. Rechaza Host/Origin ajenos
+// (evita DNS rebinding y que una web externa llame a /api/exec).
+const LOCAL_HOST_RE = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+const LOCAL_ORIGIN_RE = /^(https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?|tauri:\/\/localhost|https?:\/\/tauri\.localhost)$/;
+app.use((req, res, next) => {
+  if (!LOCAL_HOST_RE.test(req.headers.host || '')) return res.status(403).json({ error: 'Host no permitido' });
+  const origin = req.headers.origin;
+  if (origin && !LOCAL_ORIGIN_RE.test(origin)) return res.status(403).json({ error: 'Origen no permitido' });
+  next();
+});
+app.use(cors({ origin: (origin, cb) => cb(null, !origin || LOCAL_ORIGIN_RE.test(origin)) }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -190,7 +200,7 @@ Directrices:
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`====================================================`);
   console.log(`🤖 Hermes Assistant Server running at:`);
   console.log(`   http://localhost:${PORT}`);
