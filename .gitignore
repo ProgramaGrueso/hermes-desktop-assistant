@@ -12,3 +12,12 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Secretos: nunca al repositorio
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+secrets*
